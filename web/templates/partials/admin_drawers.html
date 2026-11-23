@@ -231,9 +231,39 @@
       <label for="proj-title">Project Title</label>
       <input id="proj-title" type="text" required>
     </div>
+    <div class="form-checkbox-row">
+      <input id="proj-featured" type="checkbox">
+      <label for="proj-featured">Featured Spotlight (show full-width highlight card above grid)</label>
+    </div>
+    <div class="form-row-2">
+      <div class="form-field">
+        <label for="proj-category">Category</label>
+        <input id="proj-category" type="text" list="project-category-list" placeholder="Production">
+        <datalist id="project-category-list">
+          <option value="Production"></option>
+          <option value="Client Work"></option>
+          <option value="Academic"></option>
+          <option value="Web App"></option>
+          <option value="Mobile"></option>
+          <option value="Open Source"></option>
+        </datalist>
+      </div>
+      <div class="form-field">
+        <label for="proj-year">Year</label>
+        <input id="proj-year" type="text" placeholder="2025">
+      </div>
+    </div>
+    <div class="form-field">
+      <label for="proj-role">Role</label>
+      <input id="proj-role" type="text" placeholder="Full-Stack Developer">
+    </div>
     <div class="form-field">
       <label for="proj-description">Description</label>
       <textarea id="proj-description" rows="4"></textarea>
+    </div>
+    <div class="form-field">
+      <label for="proj-highlights">Key Highlights (one per line)</label>
+      <textarea id="proj-highlights" rows="3" placeholder="Built multi-role verification workflows&#10;Deployed live to production"></textarea>
     </div>
     <div class="form-field">
       <label for="proj-image-file">Project Image</label>

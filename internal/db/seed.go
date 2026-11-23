@@ -198,7 +198,28 @@ VALUES (?, ?, ?, ?, '', ?, ?)`,
 		}
 	}
 
-	projects := []models.Project{
+	for _, proj := range seededProjectList() {
+		techBytes, _ := json.Marshal(proj.Technologies)
+		hlBytes, _ := json.Marshal(proj.Highlights)
+		featInt := 0
+		if proj.Featured {
+			featInt = 1
+		}
+		_, err = tx.ExecContext(ctx, `
+INSERT INTO projects (id, title, description, image_url, project_link, source_code_link, technologies_json, featured, category, role, year, highlights_json, display_order, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			proj.ID, proj.Title, proj.Description, proj.ImageURL, proj.ProjectLink, proj.SourceCodeLink, string(techBytes), featInt, proj.Category, proj.Role, proj.Year, string(hlBytes), proj.DisplayOrder, now, now,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+func seededProjectList() []models.Project {
+	return []models.Project{
 		{
 			ID:           "7f49cfa3-8de7-4cd3-8db4-69492e387ec4",
 			Title:        "E-LGCertified",
@@ -206,6 +227,15 @@ VALUES (?, ?, ?, ?, '', ?, ?)`,
 			ImageURL:     "/static/images/projects/e-lgcertified.webp",
 			ProjectLink:  "https://e-lgcertified.com",
 			Technologies: []string{"Laravel", "MySQL", "PHP", "React", "Tailwind CSS", "Shadcn UI"},
+			Featured:     true,
+			Category:     "Production",
+			Role:         "Full-Stack Developer",
+			Year:         "2026",
+			Highlights: []string{
+				"Dynamic certificate template designer with customizable layout and batch generation",
+				"Full-stack Laravel & MySQL backend paired with a responsive React + Shadcn UI dashboard",
+				"Public credential verification and automated PDF/image export workflow",
+			},
 			DisplayOrder: 1,
 		},
 		{
@@ -215,6 +245,15 @@ VALUES (?, ?, ?, ?, '', ?, ?)`,
 			ImageURL:     "/static/images/projects/simkan.webp",
 			ProjectLink:  "https://simkan.unida.education",
 			Technologies: []string{"Laravel", "MySQL", "PHP", "React", "Tailwind CSS", "TypeScript"},
+			Featured:     false,
+			Category:     "Academic",
+			Role:         "Full-Stack Developer (Thesis)",
+			Year:         "2026",
+			Highlights: []string{
+				"End-to-end KKL & KKN internship/community service workflow for Djuanda University",
+				"Role-based multi-stage approvals, advisor assignment, and document submission tracking",
+				"Type-safe React + TypeScript UI powered by a Laravel and MySQL REST backend",
+			},
 			DisplayOrder: 2,
 		},
 		{
@@ -224,6 +263,14 @@ VALUES (?, ?, ?, ?, '', ?, ?)`,
 			ImageURL:     "/static/images/projects/globalcompetency.webp",
 			ProjectLink:  "https://globalcompetency.id/",
 			Technologies: []string{"Laravel", "MySQL", "PHP", "React", "Tailwind CSS", "Shadcn UI"},
+			Featured:     false,
+			Category:     "Client Work",
+			Role:         "Full-Stack Developer",
+			Year:         "2025",
+			Highlights: []string{
+				"Corporate profile and training catalog for professional certification services",
+				"Dynamic admin CMS built with Laravel, MySQL, React, and Shadcn UI",
+			},
 			DisplayOrder: 3,
 		},
 		{
@@ -233,6 +280,14 @@ VALUES (?, ?, ?, ?, '', ?, ?)`,
 			ImageURL:     "/static/images/projects/cigi-global.webp",
 			ProjectLink:  "https://cigiglobal.neddyap.tech/",
 			Technologies: []string{"Laravel", "MySQL", "PHP", "React", "Tailwind CSS", "TypeScript"},
+			Featured:     false,
+			Category:     "Client Work",
+			Role:         "Full-Stack Developer",
+			Year:         "2025",
+			Highlights: []string{
+				"Structured multi-service presentation tailored for enterprise stakeholders",
+				"Built with Laravel, React, TypeScript, and Tailwind CSS for responsive delivery",
+			},
 			DisplayOrder: 4,
 		},
 		{
@@ -243,7 +298,15 @@ VALUES (?, ?, ?, ?, '', ?, ?)`,
 			ProjectLink:    "https://manajemen-kendaraan.neddyap.tech/",
 			SourceCodeLink: "https://github.com/neddyap/management-kendaraan",
 			Technologies:   []string{"Laravel", "MySQL", "PHP", "Bootstrap"},
-			DisplayOrder:   5,
+			Featured:       false,
+			Category:       "Web App",
+			Role:           "Full-Stack Intern",
+			Year:           "2024",
+			Highlights: []string{
+				"Developed for Dinas Perhubungan Kota Bogor after cleansing internal fleet datasets",
+				"Fleet CRUD, maintenance scheduling, and service history logs in Laravel & MySQL",
+			},
+			DisplayOrder: 5,
 		},
 		{
 			ID:           "01b7455b-eefa-4649-9de9-8eb84ab1b28c",
@@ -252,6 +315,14 @@ VALUES (?, ?, ?, ?, '', ?, ?)`,
 			ImageURL:     "/static/images/projects/website-desa.webp",
 			ProjectLink:  "https://desalemahduhur.neddyap.tech/",
 			Technologies: []string{"Laravel", "MySQL", "PHP", "React", "Tailwind CSS", "TypeScript"},
+			Featured:     false,
+			Category:     "Client Work",
+			Role:         "Full-Stack Developer",
+			Year:         "2025",
+			Highlights: []string{
+				"Citizen information portal and streamlined online public service requests",
+				"Promotional gallery showcasing local enterprises and village potential",
+			},
 			DisplayOrder: 6,
 		},
 		{
@@ -261,21 +332,15 @@ VALUES (?, ?, ?, ?, '', ?, ?)`,
 			ImageURL:       "/static/images/projects/refi.webp",
 			SourceCodeLink: "https://github.com/neddyap/refi",
 			Technologies:   []string{"Flutter", "Dart", "REST API"},
-			DisplayOrder:   7,
+			Featured:       false,
+			Category:       "Mobile",
+			Role:           "Mobile Developer",
+			Year:           "2024",
+			Highlights: []string{
+				"Cross-platform Flutter app powered by The Movie Database (TMDB) REST API",
+				"Movie discovery, search, ratings, and personal watchlist management",
+			},
+			DisplayOrder: 7,
 		},
 	}
-
-	for _, proj := range projects {
-		techBytes, _ := json.Marshal(proj.Technologies)
-		_, err = tx.ExecContext(ctx, `
-INSERT INTO projects (id, title, description, image_url, project_link, source_code_link, technologies_json, display_order, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			proj.ID, proj.Title, proj.Description, proj.ImageURL, proj.ProjectLink, proj.SourceCodeLink, string(techBytes), proj.DisplayOrder, now, now,
-		)
-		if err != nil {
-			return err
-		}
-	}
-
-	return tx.Commit()
 }

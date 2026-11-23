@@ -432,7 +432,12 @@
     document.getElementById("sheet-proj-title").textContent = proj ? "Edit Project" : "Add New Project";
     document.getElementById("proj-id").value = proj ? proj.id : "";
     document.getElementById("proj-title").value = proj ? proj.title : "";
+    document.getElementById("proj-featured").checked = Boolean(proj && proj.featured);
+    document.getElementById("proj-category").value = proj ? (proj.category || "") : "";
+    document.getElementById("proj-role").value = proj ? (proj.role || "") : "";
+    document.getElementById("proj-year").value = proj ? (proj.year || "") : "";
     document.getElementById("proj-description").value = proj ? (proj.description || "") : "";
+    document.getElementById("proj-highlights").value = proj && Array.isArray(proj.highlights) ? proj.highlights.join("\n") : "";
     document.getElementById("proj-image-url").value = proj ? (proj.image_url || "") : "";
     document.getElementById("proj-link").value = proj ? (proj.project_link || "") : "";
     document.getElementById("proj-source-link").value = proj ? (proj.source_code_link || "") : "";
@@ -468,9 +473,16 @@
       var id = document.getElementById("proj-id").value;
       var rawTech = document.getElementById("proj-tech").value || "";
       var techs = rawTech.split(",").map(function (t) { return t.trim(); }).filter(Boolean);
+      var rawHighlights = document.getElementById("proj-highlights").value || "";
+      var highlights = rawHighlights.split(/\r?\n/).map(function (h) { return h.trim(); }).filter(Boolean);
       var payload = {
         title: document.getElementById("proj-title").value.trim(),
+        featured: document.getElementById("proj-featured").checked,
+        category: document.getElementById("proj-category").value.trim(),
+        role: document.getElementById("proj-role").value.trim(),
+        year: document.getElementById("proj-year").value.trim(),
         description: document.getElementById("proj-description").value.trim(),
+        highlights: highlights,
         image_url: document.getElementById("proj-image-url").value.trim(),
         project_link: document.getElementById("proj-link").value.trim(),
         source_code_link: document.getElementById("proj-source-link").value.trim(),

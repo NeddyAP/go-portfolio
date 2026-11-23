@@ -84,6 +84,11 @@ type Project struct {
 	ProjectLink    string   `json:"project_link"`
 	SourceCodeLink string   `json:"source_code_link"`
 	Technologies   []string `json:"technologies"`
+	Featured       bool     `json:"featured"`
+	Category       string   `json:"category"`
+	Role           string   `json:"role"`
+	Year           string   `json:"year"`
+	Highlights     []string `json:"highlights"`
 	DisplayOrder   int      `json:"display_order"`
 	CreatedAt      string   `json:"created_at"`
 	UpdatedAt      string   `json:"updated_at"`

@@ -334,9 +334,21 @@
     {{if not .Portfolio.Projects}}
     <p class="empty-note">No projects to display at the moment.</p>
     {{else}}
-    <div class="projects-grid">
-      {{range $idx, $proj := .Portfolio.Projects}}
-      <article class="project-card reveal">
+    {{if .ProjectFilters}}
+    <div id="portfolio-filters" class="portfolio-filters" role="group" aria-label="Filter projects">
+      {{range $i, $f := .ProjectFilters}}
+      <button type="button" class="filter-pill{{if eq $i 0}} is-active{{end}}" data-filter="{{$f.Key}}" aria-pressed="{{if eq $i 0}}true{{else}}false{{end}}">
+        <span>{{$f.Label}}</span>
+        <span class="filter-count">{{$f.Count}}</span>
+      </button>
+      {{end}}
+    </div>
+    {{end}}
+
+    {{if .FeaturedProjects}}
+    <div class="featured-projects">
+      {{range $proj := .FeaturedProjects}}
+      <article class="project-featured-card project-filterable reveal" data-filter-keys="{{projectFilterKeys $proj}}" data-project="{{jsonString $proj}}">
         {{if $.IsAdmin}}
         <div class="card-admin-actions card-admin-overlay">
           <button type="button" class="btn btn-secondary btn-icon js-edit-project" data-item="{{jsonString $proj}}" title="Edit Project" aria-label="Edit {{$proj.Title}}">
@@ -348,25 +360,64 @@
         </div>
         {{end}}
 
-        <div class="project-thumb-wrap">
-          {{if $proj.ImageURL}}
-          <img
-            src="{{safeHref $proj.ImageURL}}"
-            alt="{{$proj.Title}}"
-            width="960"
-            height="540"
-            loading="{{if lt $idx 3}}eager{{else}}lazy{{end}}"
-            decoding="async"
-            class="project-thumb"
-          >
-          {{else}}
-          <div class="project-thumb-empty">No Image</div>
-          {{end}}
+        <div class="project-featured-media">
+          <div class="browser-frame{{if eq $proj.Category "Mobile"}} is-mobile{{end}}">
+            <div class="browser-bar">
+              <div class="browser-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+              <span class="browser-url">{{with displayHost $proj.ProjectLink $proj.SourceCodeLink}}{{.}}{{else}}showcase{{end}}</span>
+            </div>
+            <button type="button" class="project-thumb-wrap project-thumb-btn js-open-project" aria-label="View details for {{$proj.Title}}">
+              {{if $proj.ImageURL}}
+              <img
+                src="{{safeHref $proj.ImageURL}}"
+                alt="{{$proj.Title}}"
+                width="960"
+                height="540"
+                loading="eager"
+                decoding="async"
+                class="project-thumb"
+              >
+              {{else}}
+              <div class="project-thumb-empty">No Image</div>
+              {{end}}
+              <span class="project-thumb-overlay" aria-hidden="true"><span class="project-quick-view">Quick View</span></span>
+            </button>
+          </div>
         </div>
 
-        <div class="project-body">
-          <h3 class="project-title">{{$proj.Title}}</h3>
+        <div class="project-featured-body">
+          <div class="project-badges">
+            <span class="status-badge badge-featured">Featured</span>
+            {{if $proj.ProjectLink}}<span class="status-badge badge-live"><span class="live-dot" aria-hidden="true"></span>Live</span>{{end}}
+            {{if $proj.SourceCodeLink}}<span class="status-badge badge-oss">Open Source</span>{{end}}
+            {{if $proj.Category}}<span class="status-badge badge-cat">{{$proj.Category}}</span>{{end}}
+          </div>
+
+          <h3 class="project-title">
+            <button type="button" class="project-title-btn js-open-project">{{$proj.Title}}</button>
+          </h3>
+
+          {{if or $proj.Role $proj.Year}}
+          <div class="project-meta-row">
+            {{if $proj.Role}}<span>{{$proj.Role}}</span>{{end}}
+            {{if and $proj.Role $proj.Year}}<span aria-hidden="true">·</span>{{end}}
+            {{if $proj.Year}}<span>{{$proj.Year}}</span>{{end}}
+          </div>
+          {{end}}
+
           <p class="project-desc">{{$proj.Description}}</p>
+
+          {{if $proj.Highlights}}
+          <ul class="project-highlights">
+            {{range $proj.Highlights}}
+            <li>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>{{.}}</span>
+            </li>
+            {{end}}
+          </ul>
+          {{end}}
+
           {{if $proj.Technologies}}
           <div class="project-tags">
             {{range $proj.Technologies}}
@@ -374,10 +425,101 @@
             {{end}}
           </div>
           {{end}}
+
+          <div class="project-footer project-footer-start">
+            <button type="button" class="btn btn-secondary btn-sm js-open-project">Details</button>
+            {{if $proj.ProjectLink}}
+            <a href="{{safeHref $proj.ProjectLink}}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              Demo
+            </a>
+            {{end}}
+            {{if $proj.SourceCodeLink}}
+            <a href="{{safeHref $proj.SourceCodeLink}}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
+              {{icon "SiGithub" "icon-sm"}}
+              Source
+            </a>
+            {{end}}
+          </div>
+        </div>
+      </article>
+      {{end}}
+    </div>
+    {{end}}
+
+    {{if .GridProjects}}
+    <div class="projects-grid">
+      {{range $idx, $proj := .GridProjects}}
+      <article class="project-card project-filterable reveal" data-filter-keys="{{projectFilterKeys $proj}}" data-project="{{jsonString $proj}}">
+        {{if $.IsAdmin}}
+        <div class="card-admin-actions card-admin-overlay">
+          <button type="button" class="btn btn-secondary btn-icon js-edit-project" data-item="{{jsonString $proj}}" title="Edit Project" aria-label="Edit {{$proj.Title}}">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+          </button>
+          <button type="button" class="btn btn-secondary btn-icon text-danger js-delete-item" data-kind="project" data-id="{{$proj.ID}}" data-label="{{$proj.Title}}" title="Delete Project" aria-label="Delete {{$proj.Title}}">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </div>
+        {{end}}
+
+        <div class="browser-frame{{if eq $proj.Category "Mobile"}} is-mobile{{end}}">
+          <div class="browser-bar">
+            <div class="browser-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+            <span class="browser-url">{{with displayHost $proj.ProjectLink $proj.SourceCodeLink}}{{.}}{{else}}showcase{{end}}</span>
+          </div>
+          <button type="button" class="project-thumb-wrap project-thumb-btn js-open-project" aria-label="View details for {{$proj.Title}}">
+            {{if $proj.ImageURL}}
+            <img
+              src="{{safeHref $proj.ImageURL}}"
+              alt="{{$proj.Title}}"
+              width="960"
+              height="540"
+              loading="{{if lt $idx 3}}eager{{else}}lazy{{end}}"
+              decoding="async"
+              class="project-thumb"
+            >
+            {{else}}
+            <div class="project-thumb-empty">No Image</div>
+            {{end}}
+            <span class="project-thumb-overlay" aria-hidden="true"><span class="project-quick-view">Quick View</span></span>
+          </button>
         </div>
 
-        {{if or $proj.ProjectLink $proj.SourceCodeLink}}
+        <div class="project-body">
+          <div class="project-badges">
+            {{if $proj.ProjectLink}}<span class="status-badge badge-live"><span class="live-dot" aria-hidden="true"></span>Live</span>{{end}}
+            {{if $proj.SourceCodeLink}}<span class="status-badge badge-oss">Open Source</span>{{end}}
+            {{if $proj.Category}}<span class="status-badge badge-cat">{{$proj.Category}}</span>{{end}}
+          </div>
+
+          <h3 class="project-title">
+            <button type="button" class="project-title-btn js-open-project">{{$proj.Title}}</button>
+          </h3>
+
+          {{if or $proj.Role $proj.Year}}
+          <div class="project-meta-row">
+            {{if $proj.Role}}<span>{{$proj.Role}}</span>{{end}}
+            {{if and $proj.Role $proj.Year}}<span aria-hidden="true">·</span>{{end}}
+            {{if $proj.Year}}<span>{{$proj.Year}}</span>{{end}}
+          </div>
+          {{end}}
+
+          <p class="project-desc project-desc-clamp">{{$proj.Description}}</p>
+
+          {{if $proj.Technologies}}
+          <div class="project-tags">
+            {{range (sliceMax $proj.Technologies 4)}}
+            <span class="tech-pill">{{.}}</span>
+            {{end}}
+            {{with (overflowCount $proj.Technologies 4)}}
+            <span class="tech-pill tech-pill-more">+{{.}}</span>
+            {{end}}
+          </div>
+          {{end}}
+        </div>
+
         <div class="project-footer">
+          <button type="button" class="btn btn-secondary btn-sm js-open-project">Details</button>
           {{if $proj.ProjectLink}}
           <a href="{{safeHref $proj.ProjectLink}}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
@@ -391,10 +533,12 @@
           </a>
           {{end}}
         </div>
-        {{end}}
       </article>
       {{end}}
     </div>
+    {{end}}
+
+    <p id="portfolio-empty" class="empty-note" hidden>No projects match this filter.</p>
     {{end}}
   </section>
 
@@ -431,6 +575,60 @@
     <button type="button" id="pdf-fullscreen-close" class="btn btn-accent-blue btn-sm">Close</button>
   </div>
   <div id="pdf-fullscreen-body" class="pdf-fullscreen-body"></div>
+</div>
+
+<!-- Project Case-Study Modal -->
+<div id="project-detail-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="project-modal-title" hidden>
+  <div class="modal-card project-modal-card">
+    <div class="project-modal-header">
+      <div id="project-modal-badges" class="project-badges"></div>
+      <button type="button" id="project-modal-close" class="btn btn-outline btn-icon" aria-label="Close project details">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="project-modal-scroll">
+      <div id="project-modal-media" class="project-modal-media" hidden>
+        <div class="browser-frame">
+          <div class="browser-bar">
+            <div class="browser-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+            <span id="project-modal-host" class="browser-url"></span>
+          </div>
+          <button type="button" id="project-modal-zoom-btn" class="project-modal-zoom-btn" aria-label="Zoom project screenshot">
+            <img id="project-modal-img" src="" alt="" class="project-modal-img">
+            <span class="project-thumb-overlay" aria-hidden="true"><span class="project-quick-view">Zoom Image</span></span>
+          </button>
+        </div>
+      </div>
+      <div class="project-modal-body">
+        <h3 id="project-modal-title" class="project-modal-title"></h3>
+        <div id="project-modal-meta" class="project-meta-row" hidden></div>
+        <p id="project-modal-desc" class="project-modal-desc"></p>
+        <div id="project-modal-highlights-wrap" class="project-modal-section" hidden>
+          <h4 class="project-modal-subtitle">Key Highlights</h4>
+          <ul id="project-modal-highlights" class="project-highlights"></ul>
+        </div>
+        <div id="project-modal-tags-wrap" class="project-modal-section" hidden>
+          <h4 class="project-modal-subtitle">Tech Stack</h4>
+          <div id="project-modal-tags" class="project-tags"></div>
+        </div>
+      </div>
+    </div>
+    <div class="project-modal-footer">
+      <div id="project-modal-links" class="project-modal-links"></div>
+      <div class="project-modal-nav">
+        <button type="button" id="project-modal-prev" class="btn btn-outline btn-sm" aria-label="Previous project">← Prev</button>
+        <button type="button" id="project-modal-next" class="btn btn-outline btn-sm" aria-label="Next project">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Project Image Lightbox -->
+<div id="project-lightbox" class="project-lightbox" role="dialog" aria-modal="true" aria-label="Fullscreen project screenshot" hidden>
+  <button type="button" id="project-lightbox-close" class="btn btn-secondary btn-icon project-lightbox-close" aria-label="Close fullscreen image">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-md" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  </button>
+  <img id="project-lightbox-img" src="" alt="" class="project-lightbox-img">
 </div>
 {{end}}
 

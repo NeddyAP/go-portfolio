@@ -191,6 +191,20 @@ func (s *Server) templateFuncs() template.FuncMap {
 		"join": func(items []string, sep string) string {
 			return strings.Join(items, sep)
 		},
+		"displayHost":       displayHost,
+		"projectFilterKeys": projectFilterKeys,
+		"sliceMax": func(items []string, max int) []string {
+			if max <= 0 || len(items) <= max {
+				return items
+			}
+			return items[:max]
+		},
+		"overflowCount": func(items []string, max int) int {
+			if max < 0 || len(items) <= max {
+				return 0
+			}
+			return len(items) - max
+		},
 	}
 }
 
@@ -360,6 +374,47 @@ func isPDFURL(raw string) bool {
 		return strings.HasSuffix(strings.ToLower(u.Path), ".pdf")
 	}
 	return strings.HasSuffix(strings.ToLower(strings.TrimSpace(raw)), ".pdf")
+}
+
+func displayHost(projectLink, sourceLink string) string {
+	target := strings.TrimSpace(projectLink)
+	if target == "" {
+		target = strings.TrimSpace(sourceLink)
+	}
+	if target == "" {
+		return "local-preview"
+	}
+	u, err := url.Parse(target)
+	if err != nil || u.Host == "" {
+		return target
+	}
+	host := strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+	if host == "github.com" {
+		trimmed := strings.Trim(u.Path, "/")
+		if trimmed != "" {
+			return "github.com/" + trimmed
+		}
+	}
+	return host
+}
+
+func projectFilterKeys(p models.Project) string {
+	keys := []string{"all"}
+	if strings.TrimSpace(p.ProjectLink) != "" {
+		keys = append(keys, "live")
+	}
+	if strings.TrimSpace(p.SourceCodeLink) != "" {
+		keys = append(keys, "opensource")
+	}
+	seen := make(map[string]bool)
+	for _, tech := range p.Technologies {
+		norm := strings.ToLower(strings.TrimSpace(tech))
+		if norm != "" && !seen[norm] {
+			seen[norm] = true
+			keys = append(keys, "tech:"+norm)
+		}
+	}
+	return strings.Join(keys, " ")
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

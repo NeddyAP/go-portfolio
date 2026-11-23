@@ -114,6 +114,11 @@ CREATE TABLE IF NOT EXISTS projects (
 	project_link TEXT NOT NULL DEFAULT '',
 	source_code_link TEXT NOT NULL DEFAULT '',
 	technologies_json TEXT NOT NULL DEFAULT '[]',
+	featured INTEGER NOT NULL DEFAULT 0,
+	category TEXT NOT NULL DEFAULT '',
+	role TEXT NOT NULL DEFAULT '',
+	year TEXT NOT NULL DEFAULT '',
+	highlights_json TEXT NOT NULL DEFAULT '[]',
 	display_order INTEGER NOT NULL DEFAULT 0,
 	created_at TEXT NOT NULL DEFAULT '',
 	updated_at TEXT NOT NULL DEFAULT ''
@@ -121,8 +126,81 @@ CREATE TABLE IF NOT EXISTS projects (
 
 CREATE INDEX IF NOT EXISTS idx_projects_order ON projects(display_order, created_at DESC);
 `
-	_, err := s.sqlDB.ExecContext(ctx, schema)
-	return err
+	if _, err := s.sqlDB.ExecContext(ctx, schema); err != nil {
+		return err
+	}
+	if err := s.ensureProjectColumns(ctx); err != nil {
+		return err
+	}
+	if _, err := s.sqlDB.ExecContext(ctx, `CREATE INDEX IF NOT EXISTS idx_projects_featured_order ON projects(featured DESC, display_order ASC, created_at DESC)`); err != nil {
+		return err
+	}
+	return s.backfillSeededProjectMetadata(ctx)
+}
+
+func (s *Store) ensureProjectColumns(ctx context.Context) error {
+	rows, err := s.sqlDB.QueryContext(ctx, `PRAGMA table_info(projects)`)
+	if err != nil {
+		return err
+	}
+	existing := make(map[string]bool)
+	for rows.Next() {
+		var cid int
+		var name, colType string
+		var notNull int
+		var dflt sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &colType, &notNull, &dflt, &pk); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		existing[name] = true
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	migrations := []struct {
+		col string
+		ddl string
+	}{
+		{"featured", `ALTER TABLE projects ADD COLUMN featured INTEGER NOT NULL DEFAULT 0`},
+		{"category", `ALTER TABLE projects ADD COLUMN category TEXT NOT NULL DEFAULT ''`},
+		{"role", `ALTER TABLE projects ADD COLUMN role TEXT NOT NULL DEFAULT ''`},
+		{"year", `ALTER TABLE projects ADD COLUMN year TEXT NOT NULL DEFAULT ''`},
+		{"highlights_json", `ALTER TABLE projects ADD COLUMN highlights_json TEXT NOT NULL DEFAULT '[]'`},
+	}
+	for _, m := range migrations {
+		if !existing[m.col] {
+			if _, err := s.sqlDB.ExecContext(ctx, m.ddl); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (s *Store) backfillSeededProjectMetadata(ctx context.Context) error {
+	for _, proj := range seededProjectList() {
+		hlBytes, _ := json.Marshal(proj.Highlights)
+		featInt := 0
+		if proj.Featured {
+			featInt = 1
+		}
+		_, err := s.sqlDB.ExecContext(ctx, `
+UPDATE projects
+SET featured = ?, category = ?, role = ?, year = ?, highlights_json = ?
+WHERE id = ? AND category = '' AND role = '' AND highlights_json = '[]'`,
+			featInt, proj.Category, proj.Role, proj.Year, string(hlBytes), proj.ID,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // GetPortfolio fetches all sections in sorted order.
@@ -428,9 +506,9 @@ func (s *Store) DeleteCertificate(ctx context.Context, id string) error {
 	return nil
 }
 
-// ListProjects returns all projects ordered by display_order ASC, created_at DESC.
+// ListProjects returns all projects ordered by featured DESC, display_order ASC, created_at DESC.
 func (s *Store) ListProjects(ctx context.Context) ([]models.Project, error) {
-	const q = `SELECT id, title, description, image_url, project_link, source_code_link, technologies_json, display_order, created_at, updated_at FROM projects ORDER BY display_order ASC, created_at DESC`
+	const q = `SELECT id, title, description, image_url, project_link, source_code_link, technologies_json, featured, category, role, year, highlights_json, display_order, created_at, updated_at FROM projects ORDER BY featured DESC, display_order ASC, created_at DESC`
 	rows, err := s.sqlDB.QueryContext(ctx, q)
 	if err != nil {
 		return nil, err
@@ -440,11 +518,14 @@ func (s *Store) ListProjects(ctx context.Context) ([]models.Project, error) {
 	var items []models.Project
 	for rows.Next() {
 		var p models.Project
-		var techJSON string
-		if err := rows.Scan(&p.ID, &p.Title, &p.Description, &p.ImageURL, &p.ProjectLink, &p.SourceCodeLink, &techJSON, &p.DisplayOrder, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		var techJSON, hlJSON string
+		var featInt int
+		if err := rows.Scan(&p.ID, &p.Title, &p.Description, &p.ImageURL, &p.ProjectLink, &p.SourceCodeLink, &techJSON, &featInt, &p.Category, &p.Role, &p.Year, &hlJSON, &p.DisplayOrder, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
+		p.Featured = featInt != 0
 		_ = json.Unmarshal([]byte(techJSON), &p.Technologies)
+		_ = json.Unmarshal([]byte(hlJSON), &p.Highlights)
 		items = append(items, p)
 	}
 	return items, rows.Err()
@@ -452,17 +533,20 @@ func (s *Store) ListProjects(ctx context.Context) ([]models.Project, error) {
 
 // GetProject returns one project by ID.
 func (s *Store) GetProject(ctx context.Context, id string) (*models.Project, error) {
-	const q = `SELECT id, title, description, image_url, project_link, source_code_link, technologies_json, display_order, created_at, updated_at FROM projects WHERE id = ?`
+	const q = `SELECT id, title, description, image_url, project_link, source_code_link, technologies_json, featured, category, role, year, highlights_json, display_order, created_at, updated_at FROM projects WHERE id = ?`
 	var p models.Project
-	var techJSON string
-	err := s.sqlDB.QueryRowContext(ctx, q, id).Scan(&p.ID, &p.Title, &p.Description, &p.ImageURL, &p.ProjectLink, &p.SourceCodeLink, &techJSON, &p.DisplayOrder, &p.CreatedAt, &p.UpdatedAt)
+	var techJSON, hlJSON string
+	var featInt int
+	err := s.sqlDB.QueryRowContext(ctx, q, id).Scan(&p.ID, &p.Title, &p.Description, &p.ImageURL, &p.ProjectLink, &p.SourceCodeLink, &techJSON, &featInt, &p.Category, &p.Role, &p.Year, &hlJSON, &p.DisplayOrder, &p.CreatedAt, &p.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
+	p.Featured = featInt != 0
 	_ = json.Unmarshal([]byte(techJSON), &p.Technologies)
+	_ = json.Unmarshal([]byte(hlJSON), &p.Highlights)
 	return &p, nil
 }
 
@@ -475,9 +559,15 @@ func (s *Store) CreateProject(ctx context.Context, p models.Project) (*models.Pr
 	p.CreatedAt = now
 	p.UpdatedAt = now
 	p.Technologies = normalizeTags(p.Technologies)
+	p.Highlights = normalizeTags(p.Highlights)
 	techBytes, _ := json.Marshal(p.Technologies)
-	const q = `INSERT INTO projects (id, title, description, image_url, project_link, source_code_link, technologies_json, display_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	_, err := s.sqlDB.ExecContext(ctx, q, p.ID, p.Title, p.Description, p.ImageURL, p.ProjectLink, p.SourceCodeLink, string(techBytes), p.DisplayOrder, p.CreatedAt, p.UpdatedAt)
+	hlBytes, _ := json.Marshal(p.Highlights)
+	featInt := 0
+	if p.Featured {
+		featInt = 1
+	}
+	const q = `INSERT INTO projects (id, title, description, image_url, project_link, source_code_link, technologies_json, featured, category, role, year, highlights_json, display_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err := s.sqlDB.ExecContext(ctx, q, p.ID, p.Title, p.Description, p.ImageURL, p.ProjectLink, p.SourceCodeLink, string(techBytes), featInt, p.Category, p.Role, p.Year, string(hlBytes), p.DisplayOrder, p.CreatedAt, p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -488,9 +578,15 @@ func (s *Store) CreateProject(ctx context.Context, p models.Project) (*models.Pr
 func (s *Store) UpdateProject(ctx context.Context, id string, p models.Project) (*models.Project, error) {
 	p.UpdatedAt = nowISO()
 	p.Technologies = normalizeTags(p.Technologies)
+	p.Highlights = normalizeTags(p.Highlights)
 	techBytes, _ := json.Marshal(p.Technologies)
-	const q = `UPDATE projects SET title = ?, description = ?, image_url = ?, project_link = ?, source_code_link = ?, technologies_json = ?, display_order = ?, updated_at = ? WHERE id = ?`
-	res, err := s.sqlDB.ExecContext(ctx, q, p.Title, p.Description, p.ImageURL, p.ProjectLink, p.SourceCodeLink, string(techBytes), p.DisplayOrder, p.UpdatedAt, id)
+	hlBytes, _ := json.Marshal(p.Highlights)
+	featInt := 0
+	if p.Featured {
+		featInt = 1
+	}
+	const q = `UPDATE projects SET title = ?, description = ?, image_url = ?, project_link = ?, source_code_link = ?, technologies_json = ?, featured = ?, category = ?, role = ?, year = ?, highlights_json = ?, display_order = ?, updated_at = ? WHERE id = ?`
+	res, err := s.sqlDB.ExecContext(ctx, q, p.Title, p.Description, p.ImageURL, p.ProjectLink, p.SourceCodeLink, string(techBytes), featInt, p.Category, p.Role, p.Year, string(hlBytes), p.DisplayOrder, p.UpdatedAt, id)
 	if err != nil {
 		return nil, err
 	}

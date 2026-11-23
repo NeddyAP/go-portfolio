@@ -105,6 +105,11 @@ func TestPublicHomeSEORoutesAndCache(t *testing.T) {
 		"PT. Helios Informatika Nusantara",
 		"https://neddyap.tech/",
 		"Bogor, Jawa Barat",
+		"project-featured-card",
+		"portfolio-filters",
+		"browser-bar",
+		"e-lgcertified.com",
+		"project-detail-modal",
 	} {
 		if !strings.Contains(html, want) {
 			t.Errorf("rendered HTML missing %q", want)
@@ -254,6 +259,34 @@ func TestAuthCSRFCRUDAndUploads(t *testing.T) {
 	h.ServeHTTP(badProjRec, badProj)
 	if badProjRec.Code != http.StatusBadRequest {
 		t.Fatalf("unsafe project_link = %d, want 400", badProjRec.Code)
+	}
+
+	// Valid POST /api/projects with showcase metadata persists and renders
+	newProj := httptest.NewRequest(http.MethodPost, "/api/projects", strings.NewReader(`{
+		"title": "Telemetry Edge",
+		"featured": true,
+		"category": "Production",
+		"role": "Lead Engineer",
+		"year": "2026",
+		"highlights": ["Handled 10k req/s", "Zero-downtime rollout"],
+		"technologies": ["Go", "SQLite"],
+		"display_order": 99
+	}`))
+	addAuth(newProj, true)
+	newProjRec := httptest.NewRecorder()
+	h.ServeHTTP(newProjRec, newProj)
+	if newProjRec.Code != http.StatusCreated {
+		t.Fatalf("POST /api/projects = %d, body=%s", newProjRec.Code, newProjRec.Body.String())
+	}
+
+	afterProjReq := httptest.NewRequest(http.MethodGet, "/", nil)
+	afterProjRec := httptest.NewRecorder()
+	h.ServeHTTP(afterProjRec, afterProjReq)
+	afterBody := afterProjRec.Body.String()
+	for _, want := range []string{"Telemetry Edge", "Lead Engineer", "Handled 10k req/s", "2026"} {
+		if !strings.Contains(afterBody, want) {
+			t.Fatalf("expected %q in rendered HTML after POST /api/projects", want)
+		}
 	}
 
 	// Valid PNG upload + serve

@@ -2,10 +2,13 @@ package db_test
 
 import (
 	"context"
+	"database/sql"
+	"path/filepath"
 	"testing"
 
 	"github.com/NeddyAP/go-portfolio/internal/db"
 	"github.com/NeddyAP/go-portfolio/internal/models"
+	_ "modernc.org/sqlite"
 )
 
 func TestSeedIdempotentAndCRUD(t *testing.T) {
@@ -48,6 +51,10 @@ func TestSeedIdempotentAndCRUD(t *testing.T) {
 	}
 	if len(portfolio.Projects) != 7 {
 		t.Fatalf("expected 7 projects, got %d", len(portfolio.Projects))
+	}
+	featuredProj := portfolio.Projects[0]
+	if featuredProj.Title != "E-LGCertified" || !featuredProj.Featured || featuredProj.Category != "Production" || len(featuredProj.Highlights) == 0 {
+		t.Fatalf("unexpected seeded featured project: %+v", featuredProj)
 	}
 
 	// Partial update on skillset must preserve bio and tools
@@ -103,13 +110,88 @@ func TestSeedIdempotentAndCRUD(t *testing.T) {
 	// Project CRUD
 	proj, err := store.CreateProject(ctx, models.Project{
 		Title:        "Go Portfolio",
+		Featured:     true,
+		Category:     "Web App",
+		Role:         "Solo Engineer",
+		Year:         "2026",
+		Highlights:   []string{"Single static binary", "Embedded templates & assets"},
 		Technologies: []string{"Go", "SQLite"},
 		DisplayOrder: 0,
 	})
 	if err != nil {
 		t.Fatalf("CreateProject: %v", err)
 	}
+	if !proj.Featured || proj.Category != "Web App" || proj.Role != "Solo Engineer" || proj.Year != "2026" || len(proj.Highlights) != 2 {
+		t.Fatalf("CreateProject metadata mismatch: %+v", proj)
+	}
+
+	updatedProj, err := store.UpdateProject(ctx, proj.ID, models.Project{
+		Title:        "Go Portfolio v2",
+		Featured:     false,
+		Category:     "Open Source",
+		Role:         "Author",
+		Year:         "2026",
+		Highlights:   []string{"Zero runtime dependencies"},
+		Technologies: []string{"Go", "SQLite", "HTML"},
+		DisplayOrder: 1,
+	})
+	if err != nil {
+		t.Fatalf("UpdateProject: %v", err)
+	}
+	if updatedProj.Featured || updatedProj.Category != "Open Source" || updatedProj.Role != "Author" || len(updatedProj.Highlights) != 1 {
+		t.Fatalf("UpdateProject metadata mismatch: %+v", updatedProj)
+	}
+
 	if err := store.DeleteProject(ctx, proj.ID); err != nil {
 		t.Fatalf("DeleteProject: %v", err)
+	}
+}
+
+func TestMigrateLegacyProjectsTable(t *testing.T) {
+	dir := t.TempDir()
+	dbPath := filepath.Join(dir, "portfolio.db")
+
+	legacyDB, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("sql.Open: %v", err)
+	}
+	_, err = legacyDB.Exec(`
+		CREATE TABLE projects (
+			id TEXT PRIMARY KEY,
+			title TEXT NOT NULL,
+			description TEXT NOT NULL DEFAULT '',
+			image_url TEXT NOT NULL DEFAULT '',
+			project_link TEXT NOT NULL DEFAULT '',
+			source_code_link TEXT NOT NULL DEFAULT '',
+			technologies_json TEXT NOT NULL DEFAULT '[]',
+			display_order INTEGER NOT NULL DEFAULT 0,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL DEFAULT ''
+		);
+		INSERT INTO projects (id, title, description, image_url, project_link, source_code_link, technologies_json, display_order, created_at, updated_at)
+		VALUES ('7f49cfa3-8de7-4cd3-8db4-69492e387ec4', 'E-LGCertified', 'Legacy description', '/img.jpg', 'https://e-lgcertified.com/', '', '["Laravel"]', 0, '2025-01-01T00:00:00Z', '2025-01-01T00:00:00Z');
+	`)
+	if err != nil {
+		legacyDB.Close()
+		t.Fatalf("create legacy projects table: %v", err)
+	}
+	legacyDB.Close()
+
+	store, err := db.Open(dir)
+	if err != nil {
+		t.Fatalf("db.Open on legacy DB: %v", err)
+	}
+	defer store.Close()
+
+	projects, err := store.ListProjects(context.Background())
+	if err != nil {
+		t.Fatalf("ListProjects after migration: %v", err)
+	}
+	if len(projects) != 1 {
+		t.Fatalf("expected 1 migrated project, got %d", len(projects))
+	}
+	p := projects[0]
+	if !p.Featured || p.Category != "Production" || p.Role == "" || p.Year == "" || len(p.Highlights) == 0 {
+		t.Fatalf("expected legacy seeded project to be backfilled, got %+v", p)
 	}
 }

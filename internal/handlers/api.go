@@ -311,6 +311,17 @@ func decodeAndValidateProject(w http.ResponseWriter, r *http.Request) (models.Pr
 	proj.ImageURL = strings.TrimSpace(proj.ImageURL)
 	proj.ProjectLink = strings.TrimSpace(proj.ProjectLink)
 	proj.SourceCodeLink = strings.TrimSpace(proj.SourceCodeLink)
+	proj.Category = strings.TrimSpace(proj.Category)
+	proj.Role = strings.TrimSpace(proj.Role)
+	proj.Year = strings.TrimSpace(proj.Year)
+
+	cleanHighlights := make([]string, 0, len(proj.Highlights))
+	for _, h := range proj.Highlights {
+		if trimmed := strings.TrimSpace(h); trimmed != "" {
+			cleanHighlights = append(cleanHighlights, trimmed)
+		}
+	}
+	proj.Highlights = cleanHighlights
 
 	if proj.Title == "" {
 		writeJSONError(w, http.StatusBadRequest, "Project title is required")

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -18,17 +19,27 @@ import (
 	"github.com/NeddyAP/go-portfolio/internal/models"
 )
 
+// ProjectFilter describes a filter pill displayed above the portfolio showcase.
+type ProjectFilter struct {
+	Key   string
+	Label string
+	Count int
+}
+
 type pageViewData struct {
-	SiteURL        string
-	Title          string
-	Description    string
-	Year           int
-	IsAdmin        bool
-	AdminEmail     string
-	CSRFToken      string
-	Portfolio      *models.PortfolioData
-	Calendar       *github.CalendarData
-	AvailableIcons []icons.IconOption
+	SiteURL          string
+	Title            string
+	Description      string
+	Year             int
+	IsAdmin          bool
+	AdminEmail       string
+	CSRFToken        string
+	Portfolio        *models.PortfolioData
+	FeaturedProjects []models.Project
+	GridProjects     []models.Project
+	ProjectFilters   []ProjectFilter
+	Calendar         *github.CalendarData
+	AvailableIcons   []icons.IconOption
 }
 
 func (s *Server) buildViewData(r *http.Request, isAdmin bool, adminEmail, csrf string) (*pageViewData, error) {
@@ -48,18 +59,97 @@ func (s *Server) buildViewData(r *http.Request, isAdmin bool, adminEmail, csrf s
 		availIcons = icons.AvailableIcons()
 	}
 
+	featured, grid, filters := buildProjectShowcase(portfolio.Projects)
+
 	return &pageViewData{
-		SiteURL:        s.cfg.SiteURL,
-		Title:          portfolio.About.FullName + " - " + portfolio.About.Headline + " Portfolio",
-		Description:    desc,
-		Year:           time.Now().Year(),
-		IsAdmin:        isAdmin,
-		AdminEmail:     adminEmail,
-		CSRFToken:      csrf,
-		Portfolio:      portfolio,
-		Calendar:       cal,
-		AvailableIcons: availIcons,
+		SiteURL:          s.cfg.SiteURL,
+		Title:            portfolio.About.FullName + " - " + portfolio.About.Headline + " Portfolio",
+		Description:      desc,
+		Year:             time.Now().Year(),
+		IsAdmin:          isAdmin,
+		AdminEmail:       adminEmail,
+		CSRFToken:        csrf,
+		Portfolio:        portfolio,
+		FeaturedProjects: featured,
+		GridProjects:     grid,
+		ProjectFilters:   filters,
+		Calendar:         cal,
+		AvailableIcons:   availIcons,
 	}, nil
+}
+
+func buildProjectShowcase(projects []models.Project) (featured []models.Project, grid []models.Project, filters []ProjectFilter) {
+	liveCount := 0
+	ossCount := 0
+	type techStat struct {
+		label string
+		count int
+		first int
+	}
+	techMap := make(map[string]*techStat)
+	orderIdx := 0
+
+	for _, p := range projects {
+		if p.Featured {
+			featured = append(featured, p)
+		} else {
+			grid = append(grid, p)
+		}
+		if strings.TrimSpace(p.ProjectLink) != "" {
+			liveCount++
+		}
+		if strings.TrimSpace(p.SourceCodeLink) != "" {
+			ossCount++
+		}
+		seenInProj := make(map[string]bool)
+		for _, t := range p.Technologies {
+			label := strings.TrimSpace(t)
+			key := strings.ToLower(label)
+			if key == "" || seenInProj[key] {
+				continue
+			}
+			seenInProj[key] = true
+			if st, ok := techMap[key]; ok {
+				st.count++
+			} else {
+				techMap[key] = &techStat{label: label, count: 1, first: orderIdx}
+				orderIdx++
+			}
+		}
+	}
+
+	filters = append(filters, ProjectFilter{Key: "all", Label: "All", Count: len(projects)})
+	if liveCount > 0 {
+		filters = append(filters, ProjectFilter{Key: "live", Label: "Live", Count: liveCount})
+	}
+	if ossCount > 0 {
+		filters = append(filters, ProjectFilter{Key: "opensource", Label: "Open Source", Count: ossCount})
+	}
+
+	stats := make([]*techStat, 0, len(techMap))
+	for _, st := range techMap {
+		stats = append(stats, st)
+	}
+	sort.Slice(stats, func(i, j int) bool {
+		if stats[i].count != stats[j].count {
+			return stats[i].count > stats[j].count
+		}
+		return stats[i].first < stats[j].first
+	})
+
+	// Prioritize distinctive stack filters (skipping ubiquitous MySQL/PHP if other stacks exist, or include top 5 overall cleanly)
+	limit := 5
+	if len(stats) < limit {
+		limit = len(stats)
+	}
+	for _, st := range stats[:limit] {
+		filters = append(filters, ProjectFilter{
+			Key:   "tech:" + strings.ToLower(st.label),
+			Label: st.label,
+			Count: st.count,
+		})
+	}
+	return featured, grid, filters
 }
 
 func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
