@@ -1,0 +1,51 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          mkdir -p dist
+          go build -trimpath -ldflags="-s -w" -o dist/portfolio-linux-amd64 ./cmd/server
+          cd dist && sha256sum portfolio-linux-amd64 > portfolio-linux-amd64.sha256
+
+      - name: Publish to rolling "deploy" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git tag -f deploy
+          git push -f origin refs/tags/deploy
+          gh release view deploy >/dev/null 2>&1 || \
+            gh release create deploy --title "Latest deploy build" --notes "Rolling build used by the VPS auto-deployer." --latest=false
+          gh release upload deploy dist/portfolio-linux-amd64 --clobber
+          gh release upload deploy dist/portfolio-linux-amd64.sha256 --clobber
+          gh release edit deploy --notes "Built from ${GITHUB_SHA} (run #${GITHUB_RUN_NUMBER})"
