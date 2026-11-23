@@ -1,0 +1,26 @@
+[Unit]
+Description=Neddy Portfolio (Go SSR + SQLite)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/neddy-portfolio
+ExecStart=/opt/neddy-portfolio/portfolio
+EnvironmentFile=/etc/neddy-portfolio.env
+Environment=GOMEMLIMIT=64MiB
+Environment=GOGC=50
+Restart=on-failure
+RestartSec=3
+
+# Security & hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/neddy-portfolio/data
+
+[Install]
+WantedBy=multi-user.target

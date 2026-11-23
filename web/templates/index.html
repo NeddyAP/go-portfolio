@@ -1,0 +1,441 @@
+{{define "head_extra"}}
+{{jsonLD .}}
+{{end}}
+
+{{define "content"}}
+<div class="container page-sections">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <h1 class="hero-title">{{.Portfolio.About.FullName}}</h1>
+        <p class="hero-subtitle">{{.Portfolio.About.Headline}}</p>
+        <div class="hero-cta">
+          <a href="#portfolio" class="btn btn-primary">View Projects</a>
+          {{if .Portfolio.About.ResumeURL}}
+          <a href="{{safeHref .Portfolio.About.ResumeURL}}" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            Download Resume
+          </a>
+          {{end}}
+        </div>
+      </div>
+
+      <div class="hero-avatar-wrap">
+        <div class="hero-avatar-ring">
+          <img
+            src="{{if .Portfolio.About.ProfileImageURL}}{{safeHref .Portfolio.About.ProfileImageURL}}{{else}}/static/images/profile.webp{{end}}"
+            alt="{{.Portfolio.About.FullName}} profile picture"
+            width="384"
+            height="384"
+            fetchpriority="high"
+            decoding="async"
+            class="hero-avatar-img"
+          >
+          <div class="hero-avatar-glow" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Me Section -->
+  <section id="about" class="section-block">
+    <div class="section-header-between">
+      <h2 class="section-title">About Me</h2>
+      {{if .IsAdmin}}
+      <button type="button" class="btn btn-outline btn-icon" id="edit-about-btn" title="Edit About Me" aria-label="Edit About Me">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+      </button>
+      {{end}}
+    </div>
+
+    <div class="about-intro">
+      <p class="about-bio">{{if .Portfolio.About.Bio}}{{.Portfolio.About.Bio}}{{else}}Bio not available.{{end}}</p>
+
+      {{if .Portfolio.About.Hobbies}}
+      <div class="hobbies-list">
+        {{range .Portfolio.About.Hobbies}}
+        <span class="hobby-badge">
+          {{if .IconName}}{{icon .IconName "icon-sm text-primary"}}{{end}}
+          <span>{{.Name}}</span>
+        </span>
+        {{end}}
+      </div>
+      {{end}}
+
+      {{if .Portfolio.About.Quote}}
+      <blockquote class="about-quote">
+        <p class="quote-text">&ldquo;{{.Portfolio.About.Quote.Text}}&rdquo;</p>
+        {{if .Portfolio.About.Quote.Author}}
+        <footer class="quote-author">- {{.Portfolio.About.Quote.Author}}</footer>
+        {{end}}
+      </blockquote>
+      {{end}}
+    </div>
+
+    <div class="about-subsections">
+      <!-- Professional Skillset -->
+      <div class="subsection-block">
+        <div class="section-header-center">
+          <h3 class="subsection-title">Professional <span class="text-primary">Skillset</span></h3>
+          {{if .IsAdmin}}
+          <button type="button" class="btn btn-outline btn-icon" id="edit-skillset-btn" title="Edit Skillset" aria-label="Edit Skillset">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+          </button>
+          {{end}}
+        </div>
+
+        <div class="tech-grid">
+          {{range .Portfolio.About.Skillset}}
+          <div class="tech-tile reveal" title="{{.Name}}">
+            <div class="tech-icon">{{icon .IconName "icon-tile"}}</div>
+            <span class="tech-label">{{.Name}}</span>
+          </div>
+          {{end}}
+        </div>
+      </div>
+
+      <!-- Tools & Technologies -->
+      <div class="subsection-block">
+        <div class="section-header-center">
+          <h3 class="subsection-title">Tools &amp; <span class="text-primary">Technologies</span></h3>
+          {{if .IsAdmin}}
+          <button type="button" class="btn btn-outline btn-icon" id="edit-tools-btn" title="Edit Tools" aria-label="Edit Tools">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+          </button>
+          {{end}}
+        </div>
+
+        <div class="tech-grid">
+          {{range .Portfolio.About.Tools}}
+          <div class="tech-tile reveal" title="{{.Name}}">
+            <div class="tech-icon">{{icon .IconName "icon-tile"}}</div>
+            <span class="tech-label">{{.Name}}</span>
+          </div>
+          {{end}}
+        </div>
+      </div>
+
+      <!-- Days I Code -->
+      {{if .Calendar}}
+      <div class="subsection-block reveal">
+        <h3 class="subsection-title text-center">Days I <span class="text-primary">Code</span></h3>
+        <div class="gh-calendar-card">
+          <div class="gh-calendar-scroll">
+            <svg
+              viewBox="0 0 {{.Calendar.SVGWidth}} {{.Calendar.SVGHeight}}"
+              width="{{.Calendar.SVGWidth}}"
+              height="{{.Calendar.SVGHeight}}"
+              class="gh-calendar-svg"
+              role="img"
+              aria-label="GitHub contributions calendar for {{.Calendar.Username}}"
+            >
+              {{range .Calendar.MonthLabels}}
+              <text x="{{.X}}" y="12" class="gh-month-label">{{.Name}}</text>
+              {{end}}
+              {{range .Calendar.Weeks}}
+              {{$weekX := .X}}
+              {{range .Days}}
+              <rect
+                x="{{$weekX}}"
+                y="{{.Y}}"
+                width="13"
+                height="13"
+                rx="3"
+                ry="3"
+                class="gh-cell gh-level-{{.Level}}"
+              ><title>{{.Count}} contributions on {{.Date}}</title></rect>
+              {{end}}
+              {{end}}
+            </svg>
+          </div>
+          <div class="gh-calendar-footer">
+            <span class="gh-total">{{.Calendar.TotalContributions}} contributions in the last year</span>
+            <div class="gh-legend" aria-hidden="true">
+              <span>Less</span>
+              <span class="gh-swatch gh-level-0"></span>
+              <span class="gh-swatch gh-level-1"></span>
+              <span class="gh-swatch gh-level-2"></span>
+              <span class="gh-swatch gh-level-3"></span>
+              <span class="gh-swatch gh-level-4"></span>
+              <span>More</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  <!-- Experience Section -->
+  <section id="experience" class="section-block">
+    <div class="section-header-center mb-8">
+      <h2 class="section-title">Experience</h2>
+      {{if .IsAdmin}}
+      <button type="button" class="btn btn-outline btn-icon ml-3" id="add-experience-btn" title="Add Experience" aria-label="Add New Experience">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-md" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+      </button>
+      {{end}}
+    </div>
+
+    {{if not .Portfolio.Experiences}}
+    <p class="empty-note">No experience to display.</p>
+    {{else}}
+    <div class="timeline">
+      {{range .Portfolio.Experiences}}
+      <div class="timeline-item reveal">
+        <div class="timeline-node">
+          {{expIcon .IconName .JobTitle "icon-md"}}
+        </div>
+        <article class="exp-card">
+          {{if $.IsAdmin}}
+          <div class="card-admin-actions">
+            <button type="button" class="btn btn-ghost btn-icon js-edit-exp" data-item="{{jsonString .}}" title="Edit Experience" aria-label="Edit {{.JobTitle}}">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+            </button>
+            <button type="button" class="btn btn-ghost btn-icon text-danger js-delete-item" data-kind="experience" data-id="{{.ID}}" data-label="{{.JobTitle}} at {{.CompanyName}}" title="Delete Experience" aria-label="Delete {{.JobTitle}}">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            </button>
+          </div>
+          {{end}}
+          <h3 class="exp-company">{{.CompanyName}}</h3>
+          <p class="exp-role">{{.JobTitle}}</p>
+          <div class="exp-meta">
+            <span>{{formatDateRange .StartDate .EndDate}}</span>
+            {{if .Location}}
+            <span class="exp-location">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-xs" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              {{.Location}}
+            </span>
+            {{end}}
+          </div>
+          {{if .Description}}
+          <p class="exp-desc">{{.Description}}</p>
+          {{end}}
+        </article>
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+  </section>
+
+  <!-- Certificates Section -->
+  <section id="certificates" class="section-block">
+    <div class="section-header-center mb-8">
+      <h2 class="section-title">Certificates</h2>
+      {{if .IsAdmin}}
+      <button type="button" class="btn btn-outline btn-icon ml-3" id="add-certificate-btn" title="Add Certificate" aria-label="Add New Certificate">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-md" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+      </button>
+      {{end}}
+    </div>
+
+    {{if not .Portfolio.Certificates}}
+    <p class="empty-note">No certificates to display.</p>
+    {{else}}
+    <div class="carousel" id="cert-carousel" data-total="{{len .Portfolio.Certificates}}">
+      <div class="carousel-viewport">
+        <div class="carousel-track" id="cert-carousel-track">
+          {{range $idx, $cert := .Portfolio.Certificates}}
+          <div class="carousel-slide" data-slide-index="{{$idx}}">
+            <div class="cert-card">
+              {{if $.IsAdmin}}
+              <div class="card-admin-actions">
+                <button type="button" class="btn btn-ghost btn-icon js-edit-cert" data-item="{{jsonString $cert}}" title="Edit Certificate" aria-label="Edit {{$cert.Title}}">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+                </button>
+                <button type="button" class="btn btn-ghost btn-icon text-danger js-delete-item" data-kind="certificate" data-id="{{$cert.ID}}" data-label="{{$cert.Title}}" title="Delete Certificate" aria-label="Delete {{$cert.Title}}">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+              </div>
+              {{end}}
+
+              <div class="cert-meta">
+                <h3 class="cert-title">{{$cert.Title}}</h3>
+                {{if $cert.IssuingOrganization}}
+                <p class="cert-org">{{$cert.IssuingOrganization}}</p>
+                {{end}}
+                {{if $cert.IssueDate}}
+                <p class="cert-date">Issued: {{formatDate $cert.IssueDate}}</p>
+                {{end}}
+                {{if $cert.CredentialURL}}
+                <a href="{{safeHref $cert.CredentialURL}}" target="_blank" rel="noopener noreferrer" class="cert-verify-link">
+                  Verify Credential
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-xs" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                </a>
+                {{end}}
+              </div>
+
+              {{if $cert.CertificateFileURL}}
+              <div class="cert-preview-area">
+                {{if isPDF $cert.CertificateFileURL}}
+                <div class="pdf-lazy-box" data-pdf-url="{{safeHref $cert.CertificateFileURL}}">
+                  <div class="pdf-placeholder">
+                    <p class="pdf-note">This certificate is a PDF. Load the preview only when needed.</p>
+                    <div class="pdf-actions">
+                      <button type="button" class="btn btn-accent-blue btn-sm js-pdf-load">Load Preview</button>
+                      <a href="{{safeHref $cert.CertificateFileURL}}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">Open PDF</a>
+                    </div>
+                  </div>
+                  <div class="pdf-loaded" hidden>
+                    <div class="pdf-toolbar">
+                      <a href="{{safeHref $cert.CertificateFileURL}}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">Open PDF</a>
+                      <div class="pdf-toolbar-right">
+                        <button type="button" class="btn btn-accent-blue btn-sm js-pdf-fullscreen">Fullscreen</button>
+                        <button type="button" class="btn btn-ghost btn-sm js-pdf-hide">Hide Preview</button>
+                      </div>
+                    </div>
+                    <div class="pdf-frame-wrap"></div>
+                  </div>
+                </div>
+                {{else}}
+                <div class="cert-image-wrap">
+                  <img src="{{safeHref $cert.CertificateFileURL}}" alt="Certificate for {{$cert.Title}}" loading="lazy" decoding="async" class="cert-image">
+                </div>
+                {{end}}
+              </div>
+              {{end}}
+            </div>
+          </div>
+          {{end}}
+        </div>
+      </div>
+
+      {{if gt (len .Portfolio.Certificates) 1}}
+      <div class="carousel-controls">
+        <button type="button" id="cert-prev" class="btn btn-outline btn-icon" aria-label="Previous certificate">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div class="carousel-dots" id="cert-dots" role="tablist" aria-label="Certificate slides">
+          {{range $idx, $cert := .Portfolio.Certificates}}
+          <button type="button" class="carousel-dot{{if eq $idx 0}} is-active{{end}}" data-slide="{{$idx}}" aria-label="Go to certificate {{add $idx 1}}: {{$cert.Title}}"></button>
+          {{end}}
+        </div>
+        <button type="button" id="cert-next" class="btn btn-outline btn-icon" aria-label="Next certificate">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+  </section>
+
+  <!-- Portfolio Section -->
+  <section id="portfolio" class="section-block">
+    <div class="section-header-center mb-8">
+      <h2 class="section-title">Portfolio</h2>
+      {{if .IsAdmin}}
+      <button type="button" class="btn btn-outline btn-icon ml-3" id="add-project-btn" title="Add Project" aria-label="Add New Project">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-md" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+      </button>
+      {{end}}
+    </div>
+
+    {{if not .Portfolio.Projects}}
+    <p class="empty-note">No projects to display at the moment.</p>
+    {{else}}
+    <div class="projects-grid">
+      {{range $idx, $proj := .Portfolio.Projects}}
+      <article class="project-card reveal">
+        {{if $.IsAdmin}}
+        <div class="card-admin-actions card-admin-overlay">
+          <button type="button" class="btn btn-secondary btn-icon js-edit-project" data-item="{{jsonString $proj}}" title="Edit Project" aria-label="Edit {{$proj.Title}}">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg>
+          </button>
+          <button type="button" class="btn btn-secondary btn-icon text-danger js-delete-item" data-kind="project" data-id="{{$proj.ID}}" data-label="{{$proj.Title}}" title="Delete Project" aria-label="Delete {{$proj.Title}}">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+        </div>
+        {{end}}
+
+        <div class="project-thumb-wrap">
+          {{if $proj.ImageURL}}
+          <img
+            src="{{safeHref $proj.ImageURL}}"
+            alt="{{$proj.Title}}"
+            width="960"
+            height="540"
+            loading="{{if lt $idx 3}}eager{{else}}lazy{{end}}"
+            decoding="async"
+            class="project-thumb"
+          >
+          {{else}}
+          <div class="project-thumb-empty">No Image</div>
+          {{end}}
+        </div>
+
+        <div class="project-body">
+          <h3 class="project-title">{{$proj.Title}}</h3>
+          <p class="project-desc">{{$proj.Description}}</p>
+          {{if $proj.Technologies}}
+          <div class="project-tags">
+            {{range $proj.Technologies}}
+            <span class="tech-pill">{{.}}</span>
+            {{end}}
+          </div>
+          {{end}}
+        </div>
+
+        {{if or $proj.ProjectLink $proj.SourceCodeLink}}
+        <div class="project-footer">
+          {{if $proj.ProjectLink}}
+          <a href="{{safeHref $proj.ProjectLink}}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-sm" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+            Demo
+          </a>
+          {{end}}
+          {{if $proj.SourceCodeLink}}
+          <a href="{{safeHref $proj.SourceCodeLink}}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
+            {{icon "SiGithub" "icon-sm"}}
+            Source
+          </a>
+          {{end}}
+        </div>
+        {{end}}
+      </article>
+      {{end}}
+    </div>
+    {{end}}
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="section-block contact-section">
+    <h2 class="section-title text-center mb-10">Contact Me</h2>
+    <div class="contact-card reveal">
+      <h3 class="contact-card-title">Get in Touch</h3>
+      <p class="contact-card-desc">
+        I&apos;m always open to discussing new projects, creative ideas, or opportunities. Feel free to reach out directly.
+      </p>
+      {{if .Portfolio.About.ContactEmail}}
+      <div class="contact-email-row">
+        <a href="mailto:{{.Portfolio.About.ContactEmail}}" class="contact-email-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-md text-primary" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          <span>{{.Portfolio.About.ContactEmail}}</span>
+        </a>
+        <button type="button" id="copy-email-btn" class="btn btn-outline btn-sm" data-email="{{.Portfolio.About.ContactEmail}}" title="Copy email address">
+          Copy
+        </button>
+      </div>
+      {{else}}
+      <p class="empty-note">Contact email will be available soon.</p>
+      {{end}}
+      <p class="contact-note">Looking forward to hearing from you!</p>
+    </div>
+  </section>
+</div>
+
+<!-- PDF Fullscreen Modal -->
+<div id="pdf-fullscreen-modal" class="pdf-fullscreen" role="dialog" aria-modal="true" aria-label="Certificate PDF fullscreen preview" hidden>
+  <div class="pdf-fullscreen-bar">
+    <a id="pdf-fullscreen-open" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">Open PDF</a>
+    <button type="button" id="pdf-fullscreen-close" class="btn btn-accent-blue btn-sm">Close</button>
+  </div>
+  <div id="pdf-fullscreen-body" class="pdf-fullscreen-body"></div>
+</div>
+{{end}}
+
+{{define "body_extra"}}
+{{if .IsAdmin}}
+{{template "admin_drawers" .}}
+{{end}}
+{{end}}

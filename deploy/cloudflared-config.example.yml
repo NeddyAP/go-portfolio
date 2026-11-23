@@ -1,0 +1,12 @@
+# Example Cloudflare Tunnel configuration (/etc/cloudflared/config.yml)
+# Allows hosting behind a NAT VPS with zero open inbound firewall ports.
+
+tunnel: YOUR-TUNNEL-UUID
+credentials-file: /root/.cloudflared/YOUR-TUNNEL-UUID.json
+
+ingress:
+  - hostname: neddyap.tech
+    service: http://127.0.0.1:8080
+  - hostname: www.neddyap.tech
+    service: http://127.0.0.1:8080
+  - service: http_status:404
